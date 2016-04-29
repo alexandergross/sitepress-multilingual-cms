@@ -100,7 +100,9 @@ abstract class WPML_Name_Query_Filter extends WPML_Slug_Resolution {
 				$page_query->query[ $this->id_index ]  = (int) $pid;
 			}
 			$page_query->is_page                       = false;
-			if ( isset( $page_query->query_vars[ $this->post_type ] ) ) {
+			if ( isset( $page_query->query_vars[ $this->post_type ] )
+				 && $this->post_type !== 'page'
+			) {
 				unset( $page_query->query_vars[ $this->post_type ] );
 			}
 			unset( $page_query->query_vars[ $index ] );
