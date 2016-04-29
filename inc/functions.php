@@ -93,7 +93,7 @@ function icl_get_sub_setting( $key, $sub_key, $default = false ) {
 function wpml_get_sub_setting_filter( $default, $key, $sub_key, $deprecated = null ) {
 	$default = $deprecated !== null  && !$default ? $deprecated : $default;
 
-	$parent = wpml_get_setting_filter( $key, array() );
+	$parent = wpml_get_setting_filter(array(), $key );
 
 	return isset( $parent[ $sub_key ] ) ? $parent[ $sub_key ] : $default;
 }

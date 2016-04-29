@@ -31,6 +31,15 @@ class WPML_WP_API {
 	}
 
 	/**
+	 * @param string|int|WP_Post $ID Optional. Post ID or post object. Default empty.
+	 *
+	 * @return false|string
+	 */
+	public function get_post_status( $ID = ''  ) {
+		return get_post_status($ID);
+	}
+
+	/**
 	 * Wrapper for \get_term_link
 	 *
 	 * @param  object|int|string $term
@@ -199,6 +208,40 @@ class WPML_WP_API {
 	public function get_post_type( $post = null ) {
 
 		return get_post_type( $post );
+	}
+
+	public function is_archive() {
+		return is_archive();
+	}
+
+	public function is_front_page() {
+		return is_front_page();
+	}
+
+	public function is_home() {
+		return is_home();
+	}
+
+	/**
+	 * @param int|string|array $page Optional. Page ID, title, slug, or array of such. Default empty.
+	 *
+	 * @return bool
+	 */
+	public function is_page($page = '' ) {
+		return is_page($page);
+	}
+
+	public function is_paged() {
+		return is_paged();
+	}
+
+	/**
+	 * @param string $post
+	 *
+	 * @return int|string|array $post Optional. Post ID, title, slug, or array of such. Default empty.
+	 */
+	public function is_single($post = '') {
+		return is_single($post);
 	}
 
 	/**
@@ -827,5 +870,17 @@ class WPML_WP_API {
 		}
 
 		return $keep_key_assoc ? $array : array_values( $array );
+	}
+
+	/**
+	 * Wrapper for \get_query_var
+	 *
+	 * @param string $var
+	 * @param mixed  $default
+	 *
+	 * @return mixed
+	 */
+	public function get_query_var( $var, $default = '' ) {
+		return get_query_var( $var, $default );
 	}
 }

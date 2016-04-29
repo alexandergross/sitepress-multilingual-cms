@@ -412,12 +412,12 @@ class WPML_Query_Parser extends WPML_Full_Translation_API {
 			}
 			$redirect = $permalink;
 		}
-
 		return $redirect;
 	}
-	
+
 	private function is_permalink_part_of_request( $permalink, $request_uri ) {
-		$permalink_path = trailingslashit( parse_url( $permalink, PHP_URL_PATH ) );
-		return substr( trailingslashit( $request_uri ), 0, strlen( $permalink_path ) ) === $permalink_path;
+		$permalink_path = trailingslashit( urldecode( parse_url( $permalink, PHP_URL_PATH ) ) );
+		$request_uri    = trailingslashit( urldecode( $request_uri ) );
+		return 0 === strcasecmp( substr( $request_uri, 0, strlen( $permalink_path ) ), $permalink_path );
 	}
 }

@@ -9,8 +9,6 @@ class SitePress extends WPML_WPDB_User{
 	private $post_edit_metabox;
 	/** @var WPML_Post_Translation $post_translation */
 	private $post_translation;
-	private $posts_from_ids = array();
-	private $posts_in_other_languages = array();
 	/** @var WPML_Term_Translation $term_translation */
 	private $term_translation;
 	/** @var WPML_Post_Duplication $post_duplication */
@@ -150,7 +148,7 @@ class SitePress extends WPML_WPDB_User{
 				add_action( 'quick_edit_custom_box', array( 'WPML_Terms_Translations', 'quick_edit_terms_removal' ), 10, 2 );
 			}
 
-			add_filter( 'get_pages', array( $this, 'exclude_other_language_pages2' ) );
+			add_filter( 'get_pages', array( $this, 'exclude_other_language_pages2' ), 10, 2 );
 			add_filter( 'wp_dropdown_pages', array( $this, 'wp_dropdown_pages' ) );
 
 			add_filter( 'get_comment_link', array( $this, 'get_comment_link_filter' ) );
@@ -962,31 +960,6 @@ class SitePress extends WPML_WPDB_User{
 		$this->debug_information_menu(ICL_PLUGIN_FOLDER . '/menu/support.php');
 	}
 
-	/**
-	 * @param $post_type
-	 * @param $current_language
-	 *
-	 * @return array
-	 */
-	private function get_posts_in_other_languages( $post_type, $current_language ) {
-		if ( isset( $this->posts_in_other_languages[ $current_language ][ $post_type ] ) ) {
-			$excl_pages = $this->posts_in_other_languages[ $current_language ][ $post_type ];
-		} else {
-			$excl_pages_query = "
-								SELECT p.ID FROM {$this->wpdb->posts} p
-								JOIN {$this->wpdb->prefix}icl_translations t ON p.ID = t.element_id
-								WHERE t.element_type=%s AND p.post_type=%s AND t.language_code <> %s
-								";
-
-			$excl_pages_args                                                   = array( 'post_' . $post_type, $post_type, $current_language );
-			$excl_pages_prepare                                                = $this->wpdb->prepare( $excl_pages_query, $excl_pages_args );
-			$excl_pages                                                        = $this->wpdb->get_col( $excl_pages_prepare );
-			$this->posts_in_other_languages[ $current_language ][ $post_type ] = $excl_pages;
-		}
-
-		return $excl_pages;
-	}
-
 	private function troubleshooting_menu( $main_page ) {
 		$submenu_slug = basename( ICL_PLUGIN_PATH ) . '/menu/troubleshooting.php';
 			add_submenu_page( $main_page, __( 'Troubleshooting', 'sitepress' ), __( 'Troubleshooting', 'sitepress' ), 'wpml_manage_troubleshooting', $submenu_slug );
@@ -1354,7 +1327,7 @@ class SitePress extends WPML_WPDB_User{
 			}
 		}
 
-		do_action( 'wpml_language_has_switched' );
+		do_action( 'wpml_language_has_switched', $code, $cookie_lang, $this->original_language, $this->original_language_cookie );
 	}
 
 	function set_default_language( $code ) {
@@ -2328,57 +2301,17 @@ class SitePress extends WPML_WPDB_User{
 		return $post_lang_filter->post_language_filter();
 	}
 
-	function exclude_other_language_pages2( $arr ) {
-		$new_arr          = $arr;
-		$current_language = $this->get_current_language();
+	/**
+	 * @param array $arr Array of posts to filter
+	 * @param array $get_page_arguments Arguments passed to the `get_pages` function
+	 *
+	 * @return array
+	 */
+	function exclude_other_language_pages2( $arr, $get_page_arguments ) {
+		global $wpdb;
+		$post_hooks = new WPML_Remove_Pages_Not_In_Current_Language( $wpdb, $this);
 
-		if ( 0 !== count( $new_arr ) & $current_language !== 'all' ) {
-			$cache_key = md5( serialize( $new_arr ) );
-			if ( array_key_exists( $current_language, $this->posts_from_ids ) && array_key_exists( $cache_key, $this->posts_from_ids[ $current_language ] ) && 0 !== count( $this->posts_from_ids[ $current_language ] ) ) {
-				$new_arr = $this->posts_from_ids[ $current_language ][ $cache_key ];
-			} else {
-				// exclude them from the result set
-				if ( 0 !== count( $new_arr ) ) {
-					$post_type = 'page';
-
-					$first_item = $new_arr[0];
-					if ( is_object( $first_item ) ) {
-						$first_item = object_to_array( $first_item );
-					}
-					if ( is_array( $first_item ) ) {
-						if ( isset( $first_item['post_type'] ) ) {
-							$post_type = $first_item['post_type'];
-						} elseif ( isset( $first_item['ID'] ) ) {
-							$post_type = get_post_type( $first_item['ID'] );
-						}
-					} elseif ( is_numeric( $first_item ) ) {
-						$post_type = get_post_type( $first_item );
-					}
-
-					$filtered_pages = array();
-					// grab list of pages NOT in the current language
-					$excl_pages = $this->get_posts_in_other_languages( $post_type, $current_language);
-					foreach ( $new_arr as $page ) {
-						$post_id = false;
-						if ( is_numeric( $page ) ) {
-							$post_id = $page;
-						}elseif ( isset($page->ID) ) {
-							$post_id = $page->ID;
-						} elseif ( isset( $page['ID'] ) ) {
-							$post_id = $page['ID'];
-						}
-
-						if ( false!==$post_id && ! in_array( $post_id, $excl_pages, false ) ) {
-							$filtered_pages[] = $page;
-						}
-					}
-					$new_arr = $filtered_pages;
-				}
-				$this->posts_from_ids[ $current_language ][ $cache_key ] = $new_arr;
-			}
-		}
-
-		return $new_arr;
+		return $post_hooks->filter_pages( $arr, $get_page_arguments );
 	}
 
 	function wp_dropdown_pages( $output ) {
