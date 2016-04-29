@@ -37,23 +37,30 @@ class WPML_SEO_HeadLangs {
 
 	function head_langs() {
 		$languages = $this->sitepress->get_ls_languages( array( 'skip_missing' => true ) );
-		// If there are translations and is not paged content...
+		$languages = apply_filters( 'wpml_head_langs', $languages );
 
-		//Renders head alternate links only on certain conditions
-		$the_post = get_post();
-		$the_id   = $the_post ? $the_post->ID : false;
-		$is_valid = count( $languages ) > 1 && ! is_paged() && ( ( ( is_single() || is_page() ) && $the_id && get_post_status( $the_id ) == 'publish' ) || ( is_home() || is_front_page() || is_archive() ) );
-
-		if ( $is_valid ) {
+		if ( $this->must_render( $languages ) ) {
+			$hreflang_items = array();
 			foreach ( $languages as $code => $lang ) {
-				$alternate_hreflang = apply_filters( 'wpml_alternate_hreflang', $lang['url'], $code );
-				printf( '<link rel="alternate" hreflang="%s" href="%s" />' . PHP_EOL, $this->sitepress->get_language_tag( $code ), str_replace( '&amp;', '&', $alternate_hreflang ) );
+				$alternate_hreflang               = apply_filters( 'wpml_alternate_hreflang', $lang['url'], $code );
+				$hreflang_code                    = $this->sitepress->get_language_tag( $code );
+				if($hreflang_code) {
+					$hreflang_items[ $hreflang_code ] = str_replace( '&amp;', '&', $alternate_hreflang );
+				}
+			}
+			$hreflang_items = apply_filters( 'wpml_hreflangs', $hreflang_items );
+
+			$hreflang = '';
+			if ( is_array( $hreflang_items ) ) {
+				foreach ( $hreflang_items as $hreflang_code => $hreflang_url ) {
+					$hreflang .= '<link rel="alternate" hreflang="' . esc_attr( $hreflang_code ) . '" href="' . esc_url( $hreflang_url ) . '" />' . PHP_EOL;
+				}
+				echo apply_filters( 'wpml_hreflangs_html', $hreflang );
 			}
 		}
 	}
 
 	function render_menu() {
-
 		$seo     = $this->get_seo_settings();
 		$options = array();
 		foreach ( array( 1, 10 ) as $priority ) {
@@ -100,6 +107,23 @@ class WPML_SEO_HeadLangs {
 			</div>
 		</div>
 		<?php
+	}
+
+	private function must_render( $languages ) {
+		$post    = $this->sitepress->get_wp_api()->get_post();
+		$post_id = $post ? $post->ID : false;
+
+		$has_languages     = is_array( $languages ) && count( $languages ) > 1;
+		$is_single_or_page = $this->sitepress->get_wp_api()->is_single() || $this->sitepress->get_wp_api()->is_page();
+		$is_published      = $is_single_or_page
+		                     && $post_id
+		                     && $this->sitepress->get_wp_api()->get_post_status( $post_id ) === 'publish';
+
+		return $has_languages && ! $this->sitepress->get_wp_api()->is_paged()
+		       && ( $is_published
+		            || ( $this->sitepress->get_wp_api()->is_home()
+		                 || $this->sitepress->get_wp_api()->is_front_page()
+		                 || $this->sitepress->get_wp_api()->is_archive() ) );
 	}
 
 }
