@@ -514,7 +514,7 @@ For each language, you need to enter the following information:
 			$_POST['icl_edit_languages'][$id]['flag_upload'] = 'false';
 		}
 			// Refresh cache.
-		$sitepress->icl_language_name_cache->clear();
+		$sitepress->get_language_name_cache()->clear();
 		$sitepress->clear_flags_cache();
 		delete_option('_icl_cache');
 		
@@ -787,9 +787,9 @@ For each language, you need to enter the following information:
                 
                 icl_cache_clear(false);
                 
-                $sitepress->icl_translations_cache->clear();
+                $sitepress->get_translations_cache()->clear();
                 $sitepress->clear_flags_cache();
-                $sitepress->icl_language_name_cache->clear();
+                $sitepress->get_language_name_cache()->clear();
                 
                 $this->set_messages(sprintf(__("The language %s was deleted.", 'sitepress'), '<strong>' . $lang->code . '</strong>'));
                 
