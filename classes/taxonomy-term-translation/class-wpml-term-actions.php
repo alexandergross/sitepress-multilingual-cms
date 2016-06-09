@@ -238,10 +238,12 @@ class WPML_Term_Actions extends WPML_Full_Translation_API {
 	 *
 	 * @return null|string
 	 */
-	private function get_term_lang_ajax( $taxonomy, $post_action ) {
-		if ( filter_input( INPUT_POST, '_ajax_nonce' ) !== null && $post_action === 'add-' . $taxonomy ) {
+	public function get_term_lang_ajax( $taxonomy, $post_action ) {
+		if ( isset( $_POST['_ajax_nonce'] ) && filter_var( $_POST['_ajax_nonce'] ) !== false
+		     && $post_action === 'add-' . $taxonomy
+		) {
 			$referrer = isset( $_SERVER['HTTP_REFERER'] ) ? $_SERVER['HTTP_REFERER'] : '';
-			parse_str( (string) parse_url( $referrer, PHP_URL_QUERY ), $qvars );
+			parse_str( (string) wpml_parse_url( $referrer, PHP_URL_QUERY ), $qvars );
 			$term_lang = ! empty( $qvars['post'] ) && $this->sitepress->is_translated_post_type(
 				get_post_type( $qvars['post'] )
 			)
